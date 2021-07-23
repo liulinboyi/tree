@@ -74,65 +74,78 @@
 <body>
     <div id="app">
         <button @click="unwindAll">{{ unwind ? '收起' : '展开'}}</button>
+        <button @click="changeStruct">切换</button>
         <selects ref="select" :list="list"></selects>
     </div>
     <script>
         const app = Vue.createApp({
             data() {
                 return {
+                    origin: [],
                     list: [{
                             title: "水果",
                             children: [{
-                                title: "香蕉",
-                                // children: [{
-                                //         title: "香蕉A",
-                                //         children: [{
-                                //                 title: "香蕉AA"
-                                //             },
-                                //             {
-                                //                 title: "香蕉BB"
-                                //             }
-                                //         ]
-                                //     },
-                                //     {
-                                //         title: "香蕉B"
-                                //     }
-                                // ]
-                            }, {
-                                title: "苹果"
-                            }, {
-                                title: "梨"
-                            }, {
-                                title: "草莓"
-                            }]
+                                    title: "香蕉",
+                                    // children: [{
+                                    //         title: "香蕉A",
+                                    //         children: [{
+                                    //                 title: "香蕉AA"
+                                    //             },
+                                    //             {
+                                    //                 title: "香蕉BB"
+                                    //             }
+                                    //         ]
+                                    //     },
+                                    //     {
+                                    //         title: "香蕉B"
+                                    //     }
+                                    // ]
+                                },
+                                // {
+                                //     title: "苹果"
+                                // }, {
+                                //     title: "梨"
+                                // }, {
+                                //     title: "草莓"
+                                // }
+                            ]
                         },
-                        {
-                            title: "蔬菜",
-                            children: [{
-                                title: "芹菜"
-                            }, {
-                                title: "菠菜"
-                            }, {
-                                title: "土豆"
-                            }, {
-                                title: "白菜"
-                            }]
-                        }
+                        // {
+                        //     title: "蔬菜",
+                        //     children: [{
+                        //         title: "芹菜"
+                        //     }, {
+                        //         title: "菠菜"
+                        //     }, {
+                        //         title: "土豆"
+                        //     }, {
+                        //         title: "白菜"
+                        //     }]
+                        // }
                     ],
-                    unwind: false
+                    unwind: false,
+                    flag: "two",
                 }
             },
             methods: {
-                unwindAll() {
-                    this.unwind = !this.unwind
-                    // console.log(this.$refs.select.$.subTree.children)
+                changeStruct() {
+                    let origin = JSON.parse(JSON.stringify(this.origin))
+                    this.generate(origin, 0, this.flag)
+                    this.transform(origin)
+                    this.list = origin
+                    this.flag = this.flag === "two" ? "one" : "two"
+                    setTimeout(() => {
+                        this.windAll(this.unwind)
+                    })
+                },
+                windAll(unwind) {
                     let tree = this.$refs.select.$.subTree.children
                     let stack = [...tree]
                     while (stack.length) {
                         let top = stack.pop()
                         if (top.component) {
-                            top.component.data.isShow = this.unwind
-                            // console.log(top.component.subTree.children)
+                            top.component.data.isShow = unwind
+                            // console.log(top.component)
                         }
                         if (top.children && Array.isArray(top.children)) {
                             stack.push(...top.children)
@@ -142,7 +155,14 @@
                         }
                     }
                 },
-                generate(source, gcount) {
+                unwindAll() {
+                    this.unwind = !this.unwind
+                    // console.log(this.$refs.select.$.subTree.children)
+                    this.windAll(this.unwind)
+                },
+                generate(source, gcount, type) {
+                    type = type ? type : "one"
+                    // console.log(type)
                     if (gcount >= 5) return
                     let stack = [...source]
                     while (stack.length) {
@@ -152,20 +172,26 @@
                             stack.push(...top.children)
                         } else {
                             top.children = []
-                            top.children.push({
+                            let temp = {}
+                            if (type === 'two') {
+                                temp = [{
                                     title: `${top.title}A`
-                                },
-                                // {
-                                //     title: `${top.title}B`
-                                // }
-                            )
-                            this.generate(top.children, gcount + 1)
+                                }, {
+                                    title: `${top.title}B`
+                                }]
+                            } else if (type === 'one') {
+                                temp = [{
+                                    title: `${top.title}A`
+                                }]
+                            }
+                            top.children.push(...temp)
+                            this.generate(top.children, gcount + 1, type)
                         }
                     }
                 },
-                transform() {
+                transform(source) {
                     console.log("transform")
-                    let stack = [...this.list]
+                    let stack = [...source]
                     let childCount = 0
                     let parent = undefined
                     while (stack.length) {
@@ -192,12 +218,13 @@
                             }
                         }
                     }
-                    console.log(this.list)
+                    console.log(source)
                 }
             },
             mounted() {
-                this.generate(this.list, 0)
-                this.transform()
+                this.origin = JSON.parse(JSON.stringify(this.list))
+                this.generate(this.list, 0, "one")
+                this.transform(this.list)
             },
         })
 
@@ -214,6 +241,7 @@
                     while (stack.length) {
                         let top = stack.pop()
                         top.checked = checked
+                        top.status = undefined
                         if (top.children) {
                             top.status = undefined
                             stack.push(...top.children)
@@ -290,6 +318,9 @@
                 oks(child) {
                     console.log("boxs")
                     console.log(child)
+                    // 如果有孩子，当前节点取反，将孩子取反，状态置为undefined，然后判断所有父亲节点
+                    // 如果没有孩子，当前节点取反，直接判断所有父亲节点
+
                     // 判断选中节点有没有child
                     if (child.children) { // 如果有孩子
                         let checked = !child.checked // 本身勾选取反
@@ -298,6 +329,7 @@
                         while (stack.length) {
                             let top = stack.pop()
                             top.checked = checked // 孩子勾选取反
+                            top.status = undefined
                             if (top.children) {
                                 stack.push(...top.children)
                             }
