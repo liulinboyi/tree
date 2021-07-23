@@ -143,7 +143,7 @@
                     console.log("transform")
                     let stack = [...this.list]
                     let childCount = 0
-                    let parent = null
+                    let parent = undefined
                     while (stack.length) {
                         let top = stack.pop()
                         // console.log(top)
@@ -191,7 +191,7 @@
                         let top = stack.pop()
                         top.checked = checked
                         if (top.children) {
-                            top.status = null
+                            top.status = undefined
                             stack.push(...top.children)
                         }
                     }
@@ -234,17 +234,30 @@
                     // parent
                     let parent = child // 选中节点也要判断父亲情况
                     while (parent) {
-                        let all = this.getAllchildren(parent) // 获取所有孩子
-                        let checkes = all.filter(item => item.checked) // 判断孩子的勾选状态
-                        if (checkes.length === 0) { // 如果孩子的勾选成功个数为0，则置空父亲状态
-                            parent.status = null
-                        } else { // 如果孩子的勾选成功个数不为0
-                            if (checkes.length === all.length) { // 如果孩子的勾选成功个数为所有孩子个数，父亲勾选状态置为成功，且置父亲状态位空
-                                parent.checked = true
-                                parent.status = null
-                            } else { // 如果孩子的勾选成功个数不为所有孩子个数，父亲勾选状态置为失败，且置父亲状态为半成功
+                        if (parent.children) {
+                            let all = this.getAllchildren(parent) // 获取所有孩子
+                            let checkes = all.filter(item => item.checked) // 判断孩子的勾选状态
+                            if (checkes.length === 0) { // 如果孩子的勾选成功个数为0，则置空父亲状态
                                 parent.checked = false
-                                parent.status = "half"
+                                parent.status = undefined
+                            } else { // 如果孩子的勾选成功个数不为0
+                                if (checkes.length === all.length) { // 如果孩子的勾选成功个数为所有孩子个数，父亲勾选状态置为成功，且置父亲状态位空
+                                    parent.checked = true
+                                    parent.status = undefined
+                                } else { // 如果孩子的勾选成功个数不为所有孩子个数，父亲勾选状态置为失败，且置父亲状态为半成功
+                                    parent.checked = false
+                                    parent.status = "half"
+                                }
+                            }
+                            if (parent.checked) {
+                                console.assert(parent.checked === true && parent.status === undefined,
+                                    `parent.checked === true && parent.status === undefined is wrong ${parent.title}`
+                                )
+                            } else {
+                                console.assert(parent.checked === false && (parent.status === 'half' || parent
+                                        .status === undefined),
+                                    `parent.checked === false && parent.status === 'half' is wrong ${parent.title}`
+                                )
                             }
                         }
                         parent = parent.parent // 更新父亲
