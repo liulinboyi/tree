@@ -72,7 +72,8 @@
 </head>
 <body>
     <div id="app">
-        <selects :list="list"></selects>
+        <button @click="unwindAll">{{ unwind ? '收起' : '展开'}}</button>
+        <selects ref="select" :list="list"></selects>
     </div>
     <script>
         const app = Vue.createApp({
@@ -116,10 +117,30 @@
                                 title: "白菜"
                             }]
                         }
-                    ]
+                    ],
+                    unwind: false
                 }
             },
             methods: {
+                unwindAll() {
+                    this.unwind = !this.unwind
+                    // console.log(this.$refs.select.$.subTree.children)
+                    let tree = this.$refs.select.$.subTree.children
+                    let stack = [...tree]
+                    while (stack.length) {
+                        let top = stack.pop()
+                        if (top.component) {
+                            top.component.data.isShow = this.unwind
+                            // console.log(top.component.subTree.children)
+                        }
+                        if (top.children && Array.isArray(top.children)) {
+                            stack.push(...top.children)
+                        }
+                        if (top.component && top.component.subTree.children) {
+                            stack.push(...top.component.subTree.children)
+                        }
+                    }
+                },
                 generate(source, gcount) {
                     if (gcount >= 5) return
                     let stack = [...source]
@@ -131,10 +152,12 @@
                         } else {
                             top.children = []
                             top.children.push({
-                                title: `${top.title}A`
-                            }, {
-                                title: `${top.title}B`
-                            })
+                                    title: `${top.title}A`
+                                },
+                                // {
+                                //     title: `${top.title}B`
+                                // }
+                            )
                             this.generate(top.children, gcount + 1)
                         }
                     }
