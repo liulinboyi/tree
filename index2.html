@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./src/vue.global.js"></script>
+    <style>
+        input[type=checkbox] {
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 15px;
+            /* height: 12px; */
+            height: 15px;
+            position: relative;
+        }
+
+        input[type=checkbox]:after {
+            position: absolute;
+            /* width: 10px; */
+            width: 15px;
+            height: 15px;
+            top: 0;
+            content: " ";
+            background-color: #fff;
+            color: rgb(255, 255, 255);
+            border: 1px #888 solid;
+            display: inline-block;
+            visibility: visible;
+            /* padding: 0px 3px; */
+            border-radius: 3px;
+        }
+
+        input[type=checkbox]:checked:after {
+            content: "✓";
+            font-size: 12px;
+            background-color: #ff0000;
+            border: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* half */
+        .half[type=checkbox] {
+            margin: 0 5px;
+        }
+
+        .half[type=checkbox]:after {
+            position: absolute;
+            width: 10px;
+            height: 15px;
+            top: 0;
+            content: " ";
+            background-color: #fff;
+            color: #fff;
+            display: inline-block;
+            visibility: visible;
+            padding: 0px 3px;
+            border-radius: 3px;
+            border: 2px solid red;
+        }
+
+        .half[type=checkbox]:checked:after {
+            content: " ";
+            font-size: 12px;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <selects v-if="show" :list="list"></selects>
+    </div>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    show: false,
+                    list: [{
+                            title: "水果",
+                            children: [{
+                                    title: "香蕉",
+                                    // children: [{
+                                    //         title: "香蕉A",
+                                    //         children: [{
+                                    //                 title: "香蕉AA"
+                                    //             },
+                                    //             {
+                                    //                 title: "香蕉BB"
+                                    //             }
+                                    //         ]
+                                    //     },
+                                    //     {
+                                    //         title: "香蕉B"
+                                    //     }
+                                    // ]
+                                },
+                                // {
+                                //     title: "苹果"
+                                // }, {
+                                //     title: "梨"
+                                // }, {
+                                //     title: "草莓"
+                                // }
+                            ]
+                        },
+                        // {
+                        //     title: "蔬菜",
+                        //     children: [{
+                        //         title: "芹菜"
+                        //     }, {
+                        //         title: "菠菜"
+                        //     }, {
+                        //         title: "土豆"
+                        //     }, {
+                        //         title: "白菜"
+                        //     }]
+                        // }
+                    ]
+                }
+            },
+            methods: {
+                g(top) {
+                    // if (gcount >= 10) return
+                    top.children = []
+                    top.children.push({
+                        title: `${top.title}A`,
+                    }, {
+                        title: `${top.title}B`,
+                    })
+                    let cur = [top]
+                    let count = 0;
+                    let children = []
+                    // debugger
+                    while (count < 5) {
+                        for (let i = 0; i < cur.length; i++) {
+                            let ele = cur[i]
+                            for (let j = 0; j < ele.children.length; j++) {
+                                let item = ele.children[j]
+                                item.children = []
+                                item.children.push({
+                                        title: `${item.title}A`,
+                                    },
+                                    //  {
+                                    //     title: `${item.title}B`,
+                                    // }
+                                )
+                                children.push(item)
+                            }
+                        }
+                        cur = children
+                        children = []
+                        count++
+                    }
+                },
+                generate(source) {
+                    let stack = [...source]
+                    while (stack.length) {
+                        let top = stack.pop()
+                        // console.log(top)
+                        if (top.children) {
+                            stack.push(...top.children)
+                        } else {
+                            console.time("g")
+                            this.g(top)
+                            console.timeEnd("g")
+                        }
+                    }
+                },
+                transform() {
+                    console.log("transform")
+                    let stack = [...this.list]
+                    let childCount = 0
+                    let parent = undefined
+                    while (stack.length) {
+                        let top = stack.pop()
+                        // console.log(top)
+                        if (top.children) {
+                            if (childCount) {
+                                stack.push(top)
+                                let length = stack.length
+                                while (childCount) {
+                                    stack[length - 1].parent = parent
+                                    childCount--
+                                    length--
+                                }
+                                stack.pop()
+                            }
+                            childCount = top.children.length
+                            parent = top
+                            stack.push(...top.children)
+                        } else {
+                            if (childCount) {
+                                top.parent = parent
+                                childCount--
+                            }
+                        }
+                    }
+                    console.log(this.list)
+                }
+            },
+            mounted() {
+                this.generate(this.list)
+                console.time("transform")
+                this.transform()
+                console.timeEnd("transform")
+                this.show = true
+            },
+        })
+
+        app.component("selects", {
+            data() {
+                return {}
+            },
+            methods: {
+                oks(child) {
+                    console.log("selects")
+                    console.log(child)
+                    let checked = !child.checked
+                    let stack = [child]
+                    while (stack.length) {
+                        let top = stack.pop()
+                        top.checked = checked
+                        if (top.children) {
+                            top.status = undefined
+                            stack.push(...top.children)
+                        }
+                    }
+                }
+            },
+            props: ["list"],
+            template: `<boxs :list="list" :child="item" v-for="item in list" :key="item.title" @my-parent="oks"></boxs>`
+        })
+
+        app.component('boxs', {
+            name: "boxs",
+            data() {
+                return {
+                    isShow: true
+                }
+            },
+            props: ["child", 'list'],
+            methods: {
+                check(child) {
+                    // console.log(this)
+                    console.log("check")
+                    this.$emit('my-parent', child)
+                },
+
+                getAllchildren(child) {
+                    if (!child.children) return []
+                    let all = []
+                    let stack = [...child.children]
+                    while (stack.length) {
+                        let top = stack.pop()
+                        all.push(top)
+                        if (top.children) {
+                            stack.push(...top.children)
+                        }
+                    }
+                    return all
+                },
+
+                judgeParent(child) {
+                    // parent
+                    let parent = child // 选中节点也要判断父亲情况
+                    while (parent) {
+                        if (parent.children) {
+                            let all = this.getAllchildren(parent) // 获取所有孩子
+                            let checkes = all.filter(item => item.checked) // 判断孩子的勾选状态
+                            if (checkes.length === 0) { // 如果孩子的勾选成功个数为0，则置空父亲状态
+                                parent.checked = false
+                                parent.status = undefined
+                            } else { // 如果孩子的勾选成功个数不为0
+                                if (checkes.length === all.length) { // 如果孩子的勾选成功个数为所有孩子个数，父亲勾选状态置为成功，且置父亲状态位空
+                                    parent.checked = true
+                                    parent.status = undefined
+                                } else { // 如果孩子的勾选成功个数不为所有孩子个数，父亲勾选状态置为失败，且置父亲状态为半成功
+                                    parent.checked = false
+                                    parent.status = "half"
+                                }
+                            }
+                        }
+                        parent = parent.parent // 更新父亲
+                    }
+                },
+                oks(child) {
+                    console.log("boxs")
+                    console.log(child)
+                    // 判断选中节点有没有child
+                    if (child.children) { // 如果有孩子
+                        let checked = !child.checked // 本身勾选取反
+                        // 下面是遍历所有孩子
+                        let stack = [child]
+                        while (stack.length) {
+                            let top = stack.pop()
+                            top.checked = checked // 孩子勾选取反
+                            if (top.children) {
+                                stack.push(...top.children)
+                            }
+                        }
+                        // 判断父亲
+                        this.judgeParent(child)
+                    } else { // 如果没有孩子
+                        child.checked = !child.checked // 本身勾选取反
+                        this.judgeParent(child) // 判断父亲
+                    }
+                }
+            },
+            template: `
+            <div>
+                <i style="cursor: pointer;user-select: none;" v-if="child.children" @click="isShow=!isShow">*</i><i v-else style="visibility: hidden;">*</i>
+                <span>
+                    <!-- <i v-if="child.status === 'half'">half</i> -->
+                    <input :class="{'half': child.status === 'half'}" @click="check(child)" :checked="child.checked" type="checkbox" :id="child.title">
+                    <label :for="child.title">{{child.title}}</label>
+                </span>
+                <div v-show="isShow" style="padding-left: 20px;" v-if="child.children">
+                    <boxs :list="list" v-for="item in child.children" :child="item" @my-parent="oks"></boxs>
+                </div>
+            </div>
+            `
+        })
+
+        app.mount('#app')
+    </script>
+</body>
+</html>
